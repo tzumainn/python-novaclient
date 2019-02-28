@@ -57,12 +57,7 @@ class Flavor(base.Resource):
 
         :param metadata: A dict of key/value pairs to be set
         """
-        utils.validate_flavor_metadata_keys(metadata.keys())
-
-        body = {'extra_specs': metadata}
-        return self.manager._create(
-            "/flavors/%s/os-extra_specs" % base.getid(self), body,
-            "extra_specs", return_raw=True)
+        return self.manager.set_keys(self, metadata)
 
     def unset_keys(self, keys):
         """Unset extra specs on a flavor.
@@ -70,13 +65,8 @@ class Flavor(base.Resource):
         :param keys: A list of keys to be unset
         :returns: An instance of novaclient.base.TupleWithMeta
         """
-        result = base.TupleWithMeta((), None)
-        for k in keys:
-            ret = self.manager._delete(
-                "/flavors/%s/os-extra_specs/%s" % (base.getid(self), k))
-            result.append_request_ids(ret.request_ids)
+        return self.manager.unset_keys(self, keys)
 
-        return result
 
     def delete(self):
         """
@@ -160,6 +150,32 @@ class FlavorManager(base.ManagerWithFind):
         :returns: An instance of novaclient.base.TupleWithMeta
         """
         return self._delete("/flavors/%s" % base.getid(flavor))
+
+    def set_keys(self, flavor, metadata):
+        """Set extra specs on a flavor.
+
+        :param metadata: A dict of key/value pairs to be set
+        """
+        utils.validate_flavor_metadata_keys(metadata.keys())
+
+        body = {'extra_specs': metadata}
+        return self._create(
+            "/flavors/%s/os-extra_specs" % base.getid(flavor), body,
+            "extra_specs", return_raw=True)
+
+    def unset_keys(self, flavor, keys):
+        """Unset extra specs on a flavor.
+
+        :param keys: A list of keys to be unset
+        :returns: An instance of novaclient.base.TupleWithMeta
+        """
+        result = base.TupleWithMeta((), None)
+        for k in keys:
+            ret = self._delete(
+                "/flavors/%s/os-extra_specs/%s" % (base.getid(flavor), k))
+            result.append_request_ids(ret.request_ids)
+
+        return result
 
     def _build_body(self, name, ram, vcpus, disk, id, swap,
                     ephemeral, rxtx_factor, is_public):
